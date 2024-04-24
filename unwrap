@@ -1,0 +1,319 @@
+#!/usr/bin/env bash
+
+show_version() {
+	cat <<EOF
+unwrap v0.1
+EOF
+}
+
+# These are the default options. Not intended to be changed here. They will be
+# updated using commandline arguments to the script.
+opt_update_mode='s'
+opt_flat_mode=false
+opt_output_dir=''
+opt_filter_glob=()
+opt_threads_count=2
+opt_context_label=false
+opt_progress_bar=false
+opt_mute_stdout=false
+opt_run_mode=''
+
+# The following settings define limits to various options. They are not meant to
+# be changed by the user.
+max_threads=8
+# The list is for regex comparison, so be careful on editing.
+allowed_glob_chars='][0-9a-zA-Z.,?*/_+(){} -'
+
+pname="${0##*/}"
+
+show_copyright() {
+
+	cat <<EOF
+Copyright © 2024 Tuncay D. <https://github.com/thingsiplay/unwrap>
+EOF
+}
+
+show_examples() {
+	cat <<EOF
+examples:
+  ${pname} *.zip
+
+  ${pname} -a *.zip
+
+  ${pname} -cpm -- *.zip *.7z *.gz
+
+  ${pname} -f -i '*.iso' -o . -- *
+EOF
+}
+
+show_usage() {
+	local pspac
+	pspac="$(printf '%s' "${pname}" | sed 's/./ /g')"
+
+	cat <<EOF
+usage: ${pname} [-h | -H | -V]
+       ${pspac} [-a | -s | -k | -b]
+       ${pspac} [-f] [-o DIR] [-i GLOB]... [-x GLOB]...
+       ${pspac} [-c] [-p] [-m]
+       ${pspac} [-t NUM] [-I | -X]
+       ${pspac} -- FILES...
+
+EOF
+}
+
+show_help() {
+	local mode
+	mode="${1}"
+
+	desc() {
+		local mode
+		local var
+		local text
+		local ref
+
+		mode="${1}"
+		var="${2}"
+		text="${3}"
+		ref="${4}"
+
+		if [ "${mode}" == '-H' ]; then
+			printf '%s' "${var}: ${text} [${ref}]"
+		else
+			printf '%s' "${text}"
+		fi
+	}
+
+	help_notes() {
+		local space
+		# Empty space as workaround to preserve last new line before EOF.
+		space=" "
+
+		if [ "${mode}" == '-H' ]; then
+			cat <<EOF
+
+[1] -a -s -k -b
+What to do when extracting a file that has same name and exists already.
+-k and -b will keep older version of files by either renaming the old or the
+new filename. Renaming will add "_1" and so on to original filename. Last
+specified mode will be used. Defaults to "-${opt_update_mode}" option.
+
+[2] -f
+Stop processing sub-directories. Output a flat file structure without
+directories. Combine with -i to search sub-directories in archive too.
+
+[3] -o
+By default each archive is extracted into its own folder with same name
+without file extension. Using this option all files will be extracted
+into specified directory.
+
+[4] -i -x
+GLOB can contain wildcards or exact name of files and folders to extract.
+-i can be specified multiple times to extract more than single match.
+-x follows same rules as -i, but is for ignoring files instead.
+Example: '*.txt' to extract txt files only, or '*/img/*' to extract all files
+from sub-directory 'img'. Allowed characters: "${allowed_glob_chars}"
+
+[5] -c
+Adds additional text to each line from 7z output. The job index, total job
+count and filename that is processed are included.
+
+[6] -p
+Show a live progress bar on the bottom of the screen. Progress and remaining
+time will be calculated based on previous finished jobs. Therefore this is only
+semi-accurate.
+
+[7] -m
+Mute 7z job output. Redirect stdout to temporary files and print path of these
+files instead, in example "/tmp/parXXXXX.par".
+
+[8] -t
+How many 7z jobs to run with parallel to process multiple files at the same
+time. Defaults to "${opt_threads_count}" threads at same time, up to "${max_threads}" max.
+
+[9] -I -X
+Don't execute 7z job commands. -X will just output commandlines that would
+have been run. -I on the other hand asks every command if it should run or
+not. Answer with "y" or "Y" to start or any other ky or Enter to skip it.
+
+$(show_examples)
+${space}
+EOF
+		fi
+	}
+
+	cat <<EOF
+Unwrap - wrapper to marry GNU Parallel and 7-Zip for archive extraction
+
+$(show_usage)
+
+positional arguments:
+  FILES         path to archive files for unpacking
+  --            stop parsing options, all following arguments are FILES
+ 
+options:
+  -h            print this help and exit
+  -H            print long help with extended info and exit
+  -V            print version and exit
+
+  -a            $(desc "${mode}" 'update_mode' 'overwrite existing file' 1)
+  -s            $(desc "${mode}" 'update_mode' 'skip extracting file if exist already (default)' 1)
+  -k            $(desc "${mode}" 'update_mode' 'rename new file, keep existing unchanged' 1)
+  -b            $(desc "${mode}" 'update_mode' 'rename existing file, new becomes old name' 1)
+
+  -f            $(desc "${mode}" 'flat_mode' 'extract files without folder structure' 2)
+  -o DIR        $(desc "${mode}" 'output_dir' 'extract and unpack files into this directory' 3)
+  -i GLOB       $(desc "${mode}" 'filter_glob' 'extract only files matching this glob pattern' 4)
+  -x GLOB       $(desc "${mode}" 'filter_glob' 'do not extract files matching this glob pattern' 4)
+
+  -c            $(desc "${mode}" 'context_label' 'prepend index and filename to each jobs output' 5)
+  -p            $(desc "${mode}" 'progress_bar' 'include a live progress bar with estimated time' 6)
+  -m            $(desc "${mode}" 'mute_stdout' 'mute job output, redirect to temporary files' 7)
+
+  -t NUM        $(desc "${mode}" 'threads_count' "number of jobs to run in parallel (default: ${opt_threads_count})" 8)
+  -I            $(desc "${mode}" 'run_mode' 'interactive, ask each 7z job to execute or not' 9)
+  -X            $(desc "${mode}" 'run_mode' 'do not run 7z jobs, list the commands only' 9)
+$(help_notes "${mode}")
+$(show_copyright)
+EOF
+}
+
+if [ "${#}" -eq 0 ]; then
+	show_usage >&2
+	show_copyright >&2
+	exit 1
+fi
+
+OPTIND=1
+while getopts 'hHVaskbfo:i:x:t:cpmIX' OPTION; do
+	case "${OPTION}" in
+	h)
+		show_help
+		exit 0
+		;;
+	H)
+		show_help -H
+		exit 0
+		;;
+	V)
+		show_version
+		exit 0
+		;;
+	a) opt_update_mode="a" ;;
+	s) opt_update_mode="s" ;;
+	k) opt_update_mode="k" ;;
+	b) opt_update_mode="b" ;;
+	f) opt_flat_mode=true ;;
+	o) opt_output_dir="${OPTARG}" ;;
+	i)
+		if ! [[ "${OPTARG}" =~ ^[${allowed_glob_chars}]+$ ]]; then
+			echo "Invalid character for -i. Only \"${allowed_glob_chars}\" allowed." >&2
+			exit 1
+		fi
+		opt_filter_glob+=("-i!'${OPTARG}'")
+		;;
+	x)
+		if ! [[ "${OPTARG}" =~ ^[${allowed_glob_chars}]+$ ]]; then
+			echo "Invalid character for -x. Only \"${allowed_glob_chars}\" allowed." >&2
+			exit 1
+		fi
+		opt_filter_glob+=("-x!'${OPTARG}'")
+		;;
+	t) opt_threads_count="${OPTARG}" ;;
+	c) opt_context_label=true ;;
+	p) opt_progress_bar=true ;;
+	m) opt_mute_stdout=true ;;
+	I) opt_run_mode='I' ;;
+	X) opt_run_mode='X' ;;
+	*)
+		show_help -H >&2
+		exit 1
+		;;
+	esac
+done
+# Discard the options and sentinel --
+shift "$((OPTIND - 1))"
+
+if [ -z "${opt_threads_count}" ] || [ "${opt_threads_count}" == '' ]; then
+	opt_threads_count=1
+elif ! [[ "${opt_threads_count}" =~ ^[0-9]+$ ]]; then
+	echo 'Invalid character for -t. Only digits allowed.' >&2
+	exit 1
+elif [ "${opt_threads_count}" -lt 1 ] || [ "${opt_threads_count}" -gt "${max_threads}" ]; then
+	echo "Invalid count for -t. Only 1 to ${max_threads} allowed." >&2
+	exit 1
+fi
+
+if [ -z "${opt_output_dir}" ] || [ "${opt_output_dir}" == '' ]; then
+	# Star will be replaced by each input files name.
+	opt_output_dir='*'
+else
+	opt_output_dir="${opt_output_dir/#\~/$HOME}"
+	opt_output_dir="$(readlink -n -f -- "${opt_output_dir}")" || exit 1
+fi
+
+if [ "${opt_flat_mode}" == true ]; then
+	opt_flat_mode='e'
+else
+	opt_flat_mode='x'
+fi
+
+case "${opt_update_mode}" in
+a) opt_update_mode='aoa' ;;
+s) opt_update_mode='aos' ;;
+k) opt_update_mode='aou' ;;
+b) opt_update_mode='aot' ;;
+*)
+	echo 'Invalid mode for opt_update_mode. Only "a", "s", "k" or "b" allowed.' >&2
+	exit 1
+	;;
+esac
+
+cmd_parallel=(
+	parallel
+	-j
+	"${opt_threads_count}"
+	--keep-order
+	--line-buffer
+)
+
+if [ "${opt_context_label}" == true ]; then
+	# The following expression in the string will be interpreted by parallel
+	# to something like: "1/3 filename.zip:"
+	cmd_parallel+=(--tagstring '{#}/{= $_=total_jobs()=} {/}:')
+fi
+
+if [ "${opt_mute_stdout}" == true ]; then
+	cmd_parallel+=(--output-as-files)
+fi
+
+if [ "${opt_progress_bar}" == true ]; then
+	cmd_parallel+=(--progress)
+	cmd_parallel+=(--bar)
+	cmd_parallel+=(--eta)
+fi
+
+case "${opt_run_mode}" in
+I) cmd_parallel+=(--interactive) ;;
+X) cmd_parallel+=(--dry-run) ;;
+"") ;;
+*)
+	echo 'Invalid mode for opt_run_mode. Only "I" or "X" allowed.' >&2
+	exit 1
+	;;
+esac
+
+# NOTE: 7z requires arguments to parameters like in -o"dir" to not have a
+# splitting space character in between. They need to be specified together.
+cmd_7z=(
+	7z
+	"${opt_flat_mode}"
+	-"${opt_update_mode}"
+	-o"${opt_output_dir}"
+)
+
+if [ "${#opt_filter_glob[@]}" -gt 0 ]; then
+	cmd_7z+=("${opt_filter_glob[@]}")
+	cmd_7z+=(-r)
+fi
+
+"${cmd_parallel[@]}" "${cmd_7z[@]}" -- {} ::: "${@}"
