@@ -6,6 +6,12 @@ unwrap v0.1
 EOF
 }
 
+show_copyright() {
+	cat <<EOF
+Copyright © 2024 Tuncay D. <https://github.com/thingsiplay/unwrap>
+EOF
+}
+
 # These are the default options. Not intended to be changed here. They will be
 # updated using commandline arguments to the script.
 opt_update_mode='s'
@@ -24,14 +30,8 @@ max_threads=8
 # The list is for regex comparison, so be careful on editing.
 allowed_glob_chars='][0-9a-zA-Z.,?*/_+(){} -'
 
+# Script name without extension, for help message.
 pname="${0##*/}"
-
-show_copyright() {
-
-	cat <<EOF
-Copyright © 2024 Tuncay D. <https://github.com/thingsiplay/unwrap>
-EOF
-}
 
 show_examples() {
 	cat <<EOF
@@ -70,7 +70,6 @@ show_help() {
 		local var
 		local text
 		local ref
-
 		mode="${1}"
 		var="${2}"
 		text="${3}"
@@ -102,20 +101,24 @@ Stop processing sub-directories. Output a flat file structure without
 directories. Combine with -i to search sub-directories in archive too.
 
 [3] -o
-By default each archive is extracted into its own folder with same name
-without file extension. Using this option all files will be extracted
-into specified directory.
+By default each archive is extracted into its own folder with same name without
+file extension. Using this option, all files will be extracted into specified
+directory.
 
 [4] -i -x
-GLOB can contain wildcards or exact name of files and folders to extract.
--i can be specified multiple times to extract more than single match.
+GLOB pattern can be an exact filename or path and can contain wildcard
+characters such as "*" (match nothing or anything) and "?" (match exactly a
+single character). This option can be specified multiple times, to extract or
+ignore many files.
+-i option will extract only files matching the GLOB and ignore other,
 -x follows same rules as -i, but is for ignoring files instead.
 Example: '*.txt' to extract txt files only, or '*/img/*' to extract all files
 from sub-directory 'img'. Allowed characters: "${allowed_glob_chars}"
 
 [5] -c
-Adds additional text to each line from 7z output. The job index, total job
-count and filename that is processed are included.
+Preprends additional text to each line of 7z output for context. The info is
+formatted as "job_index/total job_count filename_to_process:" and looks like
+"1/3 filename.zip:" .
 
 [6] -p
 Show a live progress bar on the bottom of the screen. Progress and remaining
@@ -133,7 +136,7 @@ time. Defaults to "${opt_threads_count}" threads at same time, up to "${max_thre
 [9] -I -X
 Don't execute 7z job commands. -X will just output commandlines that would
 have been run. -I on the other hand asks every command if it should run or
-not. Answer with "y" or "Y" to start or any other ky or Enter to skip it.
+not. Answer with "y" or "Y" to start or any other key or Enter to skip it.
 
 $(show_examples)
 ${space}
@@ -151,7 +154,7 @@ positional arguments:
   --            stop parsing options, all following arguments are FILES
  
 options:
-  -h            print this help and exit
+  -h            print help and exit
   -H            print long help with extended info and exit
   -V            print version and exit
 
@@ -161,7 +164,7 @@ options:
   -b            $(desc "${mode}" 'update_mode' 'rename existing file, new becomes old name' 1)
 
   -f            $(desc "${mode}" 'flat_mode' 'extract files without folder structure' 2)
-  -o DIR        $(desc "${mode}" 'output_dir' 'extract and unpack files into this directory' 3)
+  -o DIR        $(desc "${mode}" 'output_dir' 'unpack files and folders into this directory' 3)
   -i GLOB       $(desc "${mode}" 'filter_glob' 'extract only files matching this glob pattern' 4)
   -x GLOB       $(desc "${mode}" 'filter_glob' 'do not extract files matching this glob pattern' 4)
 
