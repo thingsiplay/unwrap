@@ -15,7 +15,7 @@ opt_filter_glob=()
 opt_threads_count=2
 opt_context_label=false
 opt_progress_bar=false
-opt_mute_stdout=false
+opt_quiet_stdout=false
 opt_run_mode=''
 
 # The following settings define limits to various options. They are not meant to
@@ -40,7 +40,7 @@ examples:
 
   ${pname} -a *.zip
 
-  ${pname} -cpm -- *.zip *.7z *.gz
+  ${pname} -cpq -- *.zip *.7z *.gz
 
   ${pname} -f -i '*.iso' -o . -- *
 EOF
@@ -54,7 +54,7 @@ show_usage() {
 usage: ${pname} [-h | -H | -V]
        ${pspac} [-a | -s | -k | -b]
        ${pspac} [-f] [-o DIR] [-i GLOB]... [-x GLOB]...
-       ${pspac} [-c] [-p] [-m]
+       ${pspac} [-c] [-p] [-q]
        ${pspac} [-t NUM] [-I | -X]
        ${pspac} -- FILES...
 
@@ -122,9 +122,9 @@ Show a live progress bar on the bottom of the screen. Progress and remaining
 time will be calculated based on previous finished jobs. Therefore this is only
 semi-accurate.
 
-[7] -m
-Mute 7z job output. Redirect stdout to temporary files and print path of these
-files instead, in example "/tmp/parXXXXX.par".
+[7] -q
+Quiet 7z operation. Mute 7z job output and redirect stdout to temporary files
+and print path of these files instead, in example "/tmp/parXXXXX.par".
 
 [8] -t
 How many 7z jobs to run with parallel to process multiple files at the same
@@ -167,7 +167,7 @@ options:
 
   -c            $(desc "${mode}" 'context_label' 'prepend index and filename to each jobs output' 5)
   -p            $(desc "${mode}" 'progress_bar' 'include a live progress bar with estimated time' 6)
-  -m            $(desc "${mode}" 'mute_stdout' 'mute job output, redirect to temporary files' 7)
+  -q            $(desc "${mode}" 'quiet_stdout' 'mute job output, redirect to temporary files' 7)
 
   -t NUM        $(desc "${mode}" 'threads_count' "number of jobs to run in parallel (default: ${opt_threads_count})" 8)
   -I            $(desc "${mode}" 'run_mode' 'interactive, ask each 7z job to execute or not' 9)
@@ -184,7 +184,7 @@ if [ "${#}" -eq 0 ]; then
 fi
 
 OPTIND=1
-while getopts 'hHVaskbfo:i:x:t:cpmIX' OPTION; do
+while getopts 'hHVaskbfo:i:x:t:cpqIX' OPTION; do
 	case "${OPTION}" in
 	h)
 		show_help
@@ -221,7 +221,7 @@ while getopts 'hHVaskbfo:i:x:t:cpmIX' OPTION; do
 	t) opt_threads_count="${OPTARG}" ;;
 	c) opt_context_label=true ;;
 	p) opt_progress_bar=true ;;
-	m) opt_mute_stdout=true ;;
+	q) opt_quiet_stdout=true ;;
 	I) opt_run_mode='I' ;;
 	X) opt_run_mode='X' ;;
 	*)
@@ -282,7 +282,7 @@ if [ "${opt_context_label}" == true ]; then
 	cmd_parallel+=(--tagstring '{#}/{= $_=total_jobs()=} {/}:')
 fi
 
-if [ "${opt_mute_stdout}" == true ]; then
+if [ "${opt_quiet_stdout}" == true ]; then
 	cmd_parallel+=(--output-as-files)
 fi
 
