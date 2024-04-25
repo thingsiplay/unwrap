@@ -173,15 +173,15 @@ options:
   -b            $(desc "${mode}" 'update_mode' 'rename existing file, new becomes old name' 1)
 
   -f            $(desc "${mode}" 'flat_mode' 'extract files without their internal structure' 2)
-  -r            $(desc "${mode}" 'root_dir' 'do not create sub directories for each archive' 3)
-  -o DIR        $(desc "${mode}" 'output_dir' 'unpack all archives under this location' 4)
+  -r            $(desc "${mode}" 'root_dir' 'do not create subfolder container for each archive' 3)
+  -o DIR        $(desc "${mode}" 'output_dir' 'unpack all archives under this central location' 4)
   -i GLOB       $(desc "${mode}" 'filter_glob' 'extract only files matching this glob pattern' 5)
   -x GLOB       $(desc "${mode}" 'filter_glob' 'do not extract files matching this glob pattern' 5)
 
-  -c            $(desc "${mode}" 'context_label' 'prepend index and filename to each jobs output' 6)
+  -c            $(desc "${mode}" 'context_label' 'prepend index and archive name to each jobs output' 6)
   -l            $(desc "${mode}" 'log_files' 'list extracted files from archive in job output' 7)
   -p            $(desc "${mode}" 'progress_bar' 'include a live progress bar with estimated time' 8)
-  -q            $(desc "${mode}" 'quiet_stdout' 'mute job output, redirect to temporary files' 9)
+  -q            $(desc "${mode}" 'quiet_stdout' 'mute job output and redirect to temporary files' 9)
 
   -t NUM        $(desc "${mode}" 'threads_count' "number of jobs to run in parallel (default: ${opt_threads_count})" 10)
   -I            $(desc "${mode}" 'run_mode' 'interactive, ask each 7z job to execute or not' 11)
