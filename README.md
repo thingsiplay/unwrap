@@ -75,7 +75,7 @@ I won't go too much into detail here, as the script has a descriptive help
 page: `unwrap -h` , or more explanation with `unwrap -H`
 
 In case of most basic usage without options, folders are created automatically
-for each input file in current working directory. The following command will
+for each input file in archives original location. The following command will
 create a folder named `my_1/` and unpack everything from the file `my_1.zip`
 into it. Existing files in that directory will not be overwritten by files with
 same name from archive content.
@@ -98,11 +98,13 @@ unwrap -a *.zip
 ```
 
 With `-i GLOB` a file name or path with wildcards can be specified, to extract
-only files that match the GLOB pattern. Option `-f` will extract files without
-a folder structure, meaning all files are output flat without creating sub
-folders. `-o DIR` will specify a directory to channel all extracted files and
-folders into. Let's combine all these three options to extract .txt files into
-current working dir:
+only files that match the GLOB pattern. Option `-f` will ignore archives
+internal sub directory structure and extract a flat structure only. `-o DIR`
+will specify a directory to channel all extracted files and folders into.
+
+Let's combine all these three options to extract .txt files into current
+working dir. Dedicated sub folders for each archives are still created by
+default, to separate the extraction:
 
 ```bash
 unwrap -f -i '*.txt' -o . *.zip
@@ -111,7 +113,7 @@ unwrap -f -i '*.txt' -o . *.zip
 Or same as above, but shorter:
 
 ```bash
-unwrap -fi'*.txt' -o. *.zip
+unwrap -fi*.txt -o. *.zip
 ```
 
 There are a few more options available. You can also instruct the script to not
@@ -119,7 +121,7 @@ execute any `7z` command, but instead list them for inspection. Just add `-X`
 to it and watch:
 
 ```bash
-unwrap -X -fi'*.txt' -o. *.zip
+unwrap -X -fi*.txt -o. *.zip
 ```
 
 Have a great rest of your day.
