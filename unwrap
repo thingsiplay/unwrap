@@ -2,7 +2,7 @@
 
 show_version() {
 	cat <<EOF
-unwrap v0.3
+unwrap v0.4
 EOF
 }
 
