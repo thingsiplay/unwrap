@@ -16,6 +16,7 @@ EOF
 # updated using commandline arguments to the script.
 opt_update_mode='s'
 opt_flat_mode=false
+opt_root_dir=''
 opt_output_dir=''
 opt_filter_glob=()
 opt_threads_count=2
@@ -53,7 +54,7 @@ show_usage() {
 	cat <<EOF
 usage: ${pname} [-h | -H | -V]
        ${pspac} [-a | -s | -k | -b]
-       ${pspac} [-f] [-o DIR] [-i GLOB]... [-x GLOB]...
+       ${pspac} [-f] [-r] [-o DIR] [-i GLOB]... [-x GLOB]...
        ${pspac} [-c] [-p] [-q]
        ${pspac} [-t NUM] [-I | -X]
        ${pspac} -- FILES...
@@ -97,15 +98,18 @@ new filename. Renaming will add "_1" and so on to original filename. Last
 specified mode will be used. Defaults to "-${opt_update_mode}" option.
 
 [2] -f
-Stop processing sub-directories. Output a flat file structure without
-directories. Combine with -i to search sub-directories in archive too.
+Do not replicate directory structure from the archive. Extract a flat file
+structure only. Use -i to find files in inner directories.
 
-[3] -o
-By default each archive is extracted into its own folder with same name without
-file extension. Using this option, all files will be extracted into specified
-directory.
+[3] -r
+Extract content into root place of output directory. Disable automatic creation
+of dedicated folders for each archive.
 
-[4] -i -x
+[4] -o
+Output directory as base location for all archives. Without this option all
+archives are unpacked in the same directory where they are located.
+
+[5] -i -x
 GLOB pattern can be an exact filename or path and can contain wildcard
 characters such as "*" (match nothing or anything) and "?" (match exactly a
 single character). This option can be specified multiple times, to extract or
@@ -115,25 +119,25 @@ ignore many files.
 Example: '*.txt' to extract txt files only, or '*/img/*' to extract all files
 from sub-directory 'img'. Allowed characters: "${allowed_glob_chars}"
 
-[5] -c
-Preprends additional text to each line of 7z output for context. The info is
+[6] -c
+Prepends additional text to each line of 7z output for context. The info is
 formatted as "job_index/total job_count filename_to_process:" and looks like
 "1/3 filename.zip:" .
 
-[6] -p
+[7] -p
 Show a live progress bar on the bottom of the screen. Progress and remaining
 time will be calculated based on previous finished jobs. Therefore this is only
 semi-accurate.
 
-[7] -q
+[8] -q
 Quiet 7z operation. Mute 7z job output and redirect stdout to temporary files
 and print path of these files instead, in example "/tmp/parXXXXX.par".
 
-[8] -t
+[9] -t
 How many 7z jobs to run with parallel to process multiple files at the same
 time. Defaults to "${opt_threads_count}" threads at same time, up to "${max_threads}" max.
 
-[9] -I -X
+[10] -I -X
 Don't execute 7z job commands. -X will just output commandlines that would
 have been run. -I on the other hand asks every command if it should run or
 not. Answer with "y" or "Y" to start or any other key or Enter to skip it.
@@ -163,18 +167,19 @@ options:
   -k            $(desc "${mode}" 'update_mode' 'rename new file, keep existing unchanged' 1)
   -b            $(desc "${mode}" 'update_mode' 'rename existing file, new becomes old name' 1)
 
-  -f            $(desc "${mode}" 'flat_mode' 'extract files without folder structure' 2)
-  -o DIR        $(desc "${mode}" 'output_dir' 'unpack files and folders into this directory' 3)
-  -i GLOB       $(desc "${mode}" 'filter_glob' 'extract only files matching this glob pattern' 4)
-  -x GLOB       $(desc "${mode}" 'filter_glob' 'do not extract files matching this glob pattern' 4)
+  -f            $(desc "${mode}" 'flat_mode' 'extract files without their internal structure' 2)
+  -r            $(desc "${mode}" 'root_dir' 'do not create sub directories for each archive' 3)
+  -o DIR        $(desc "${mode}" 'output_dir' 'unpack all archives under this location' 4)
+  -i GLOB       $(desc "${mode}" 'filter_glob' 'extract only files matching this glob pattern' 5)
+  -x GLOB       $(desc "${mode}" 'filter_glob' 'do not extract files matching this glob pattern' 5)
 
-  -c            $(desc "${mode}" 'context_label' 'prepend index and filename to each jobs output' 5)
-  -p            $(desc "${mode}" 'progress_bar' 'include a live progress bar with estimated time' 6)
-  -q            $(desc "${mode}" 'quiet_stdout' 'mute job output, redirect to temporary files' 7)
+  -c            $(desc "${mode}" 'context_label' 'prepend index and filename to each jobs output' 6)
+  -p            $(desc "${mode}" 'progress_bar' 'include a live progress bar with estimated time' 7)
+  -q            $(desc "${mode}" 'quiet_stdout' 'mute job output, redirect to temporary files' 8)
 
-  -t NUM        $(desc "${mode}" 'threads_count' "number of jobs to run in parallel (default: ${opt_threads_count})" 8)
-  -I            $(desc "${mode}" 'run_mode' 'interactive, ask each 7z job to execute or not' 9)
-  -X            $(desc "${mode}" 'run_mode' 'do not run 7z jobs, list the commands only' 9)
+  -t NUM        $(desc "${mode}" 'threads_count' "number of jobs to run in parallel (default: ${opt_threads_count})" 9)
+  -I            $(desc "${mode}" 'run_mode' 'interactive, ask each 7z job to execute or not' 10)
+  -X            $(desc "${mode}" 'run_mode' 'do not run 7z jobs, list the commands only' 10)
 $(help_notes "${mode}")
 $(show_copyright)
 EOF
@@ -187,7 +192,7 @@ if [ "${#}" -eq 0 ]; then
 fi
 
 OPTIND=1
-while getopts 'hHVaskbfo:i:x:t:cpqIX' OPTION; do
+while getopts 'hHVaskbfro:i:x:t:cpqIX' OPTION; do
 	case "${OPTION}" in
 	h)
 		show_help
@@ -206,6 +211,7 @@ while getopts 'hHVaskbfo:i:x:t:cpqIX' OPTION; do
 	k) opt_update_mode="k" ;;
 	b) opt_update_mode="b" ;;
 	f) opt_flat_mode=true ;;
+	r) opt_root_dir=true ;;
 	o) opt_output_dir="${OPTARG}" ;;
 	i)
 		if ! [[ "${OPTARG}" =~ ^[${allowed_glob_chars}]+$ ]]; then
@@ -236,6 +242,12 @@ done
 # Discard the options and sentinel --
 shift "$((OPTIND - 1))"
 
+for file in "${@}"; do
+	if [ -f "${file}" ]; then
+		input_files+=("${file}")
+	fi
+done
+
 if [ -z "${opt_threads_count}" ] || [ "${opt_threads_count}" == '' ]; then
 	opt_threads_count=1
 elif ! [[ "${opt_threads_count}" =~ ^[0-9]+$ ]]; then
@@ -246,12 +258,22 @@ elif [ "${opt_threads_count}" -lt 1 ] || [ "${opt_threads_count}" -gt "${max_thr
 	exit 1
 fi
 
+# subdir is part of opt_output_dir. Parallel interprets this special sequence
+# as follows, which is then used by 7z to determine where to save extracted
+# files:
+#   {//}=Dirname of input line.
+#   {/.}=Basename of input line without extension.
+if [ "${opt_root_dir}" == true ]; then
+	subdir=''
+else
+	subdir="/{/.}"
+fi
+
 if [ -z "${opt_output_dir}" ] || [ "${opt_output_dir}" == '' ]; then
-	# Star will be replaced by each input files name.
-	opt_output_dir='*'
+	opt_output_dir="{//}${subdir}"
 else
 	opt_output_dir="${opt_output_dir/#\~/$HOME}"
-	opt_output_dir="$(readlink -n -f -- "${opt_output_dir}")" || exit 1
+	opt_output_dir="$(readlink -n -f -- "${opt_output_dir}")${subdir}" || exit 1
 fi
 
 if [ "${opt_flat_mode}" == true ]; then
@@ -319,4 +341,4 @@ if [ "${#opt_filter_glob[@]}" -gt 0 ]; then
 	cmd_7z+=(-r)
 fi
 
-"${cmd_parallel[@]}" "${cmd_7z[@]}" -- {} ::: "${@}"
+"${cmd_parallel[@]}" "${cmd_7z[@]}" -- {} ::: "${input_files[@]}"
