@@ -56,6 +56,19 @@ cd unwrap
 chmod +x unwrap
 ```
 
+### Copy / Install
+
+Following install operation is optional and is just an example how you could
+copy the script to your system. Use a destination that makes sense for your
+system (i.e. a directory where executable files are located).
+
+```bash
+\install -v unwrap ~/.local/bin/
+```
+
+Note: The backslash at the beginning of `\install` tells Bash to ignore Bash
+alias or functions and use the program directly.
+
 ## How to use
 
 I won't go too much into detail here, as the script has a descriptive help
