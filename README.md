@@ -11,16 +11,16 @@ Wrapper to marry GNU Parallel and 7-Zip for archive extraction.
 It uses 7z to extract files from archives. By also utilizing GNU Parallel,
 multiple files can be processed at the same time.
 
-The purpose is to streamline option handling and usability of both programs
-into an unified command line interface, by only incorporating functionality
-which I need. 7z option and argument handling is a bit confusing and does
-things in unique and unfamiliar ways. On the other side, we have Parallel,
-which is extremely complex and has ton of functionality; also confusing. So I
-picked up my favorite options and bundled them into a manageable script.
+Purpose is to streamline option handling and usability of both programs into an
+unified interface. Sensible defaults and only functionality I care about are
+incorporated. 7z option and argument handling is confusing, doing things in
+unconventional ways. On the other side, we have Parallel, which is complicated
+and has ton of features; also confusing. So I picked up my favorite options and
+bundled them into a manageable script.
 
-Name of the script is inspired by `unwrap()` functionality from Rust
-programming language. It's purpose is to provide the content of certain type
-of variables by looking inside of it and taking it out.
+Name of the script is inspired by `unwrap()` operation from Rust programming
+language. It's purpose is to provide the content of certain type of variables,
+by looking inside of it and taking it out.
 
 ## Installation
 
