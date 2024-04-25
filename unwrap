@@ -21,6 +21,7 @@ opt_output_dir=''
 opt_filter_glob=()
 opt_threads_count=2
 opt_context_label=false
+opt_log_files=false
 opt_progress_bar=false
 opt_quiet_stdout=false
 opt_run_mode=''
@@ -55,7 +56,7 @@ show_usage() {
 usage: ${pname} [-h | -H | -V]
        ${pspac} [-a | -s | -k | -b]
        ${pspac} [-f] [-r] [-o DIR] [-i GLOB]... [-x GLOB]...
-       ${pspac} [-c] [-p] [-q]
+       ${pspac} [-c] [-l] [-p] [-q]
        ${pspac} [-t NUM] [-I | -X]
        ${pspac} -- FILES...
 
@@ -124,20 +125,24 @@ Prepends additional text to each line of 7z output for context. The info is
 formatted as "job_index/total job_count filename_to_process:" and looks like
 "1/3 filename.zip:" .
 
-[7] -p
+[7] -l
+List all processed files that were extracted from archive content. File names
+and other operational information are logged in the 7z job output.
+
+[8] -p
 Show a live progress bar on the bottom of the screen. Progress and remaining
 time will be calculated based on previous finished jobs. Therefore this is only
 semi-accurate.
 
-[8] -q
+[9] -q
 Quiet 7z operation. Mute 7z job output and redirect stdout to temporary files
 and print path of these files instead, in example "/tmp/parXXXXX.par".
 
-[9] -t
+[10] -t
 How many 7z jobs to run with parallel to process multiple files at the same
 time. Defaults to "${opt_threads_count}" threads at same time, up to "${max_threads}" max.
 
-[10] -I -X
+[11] -I -X
 Don't execute 7z job commands. -X will just output commandlines that would
 have been run. -I on the other hand asks every command if it should run or
 not. Answer with "y" or "Y" to start or any other key or Enter to skip it.
@@ -174,12 +179,13 @@ options:
   -x GLOB       $(desc "${mode}" 'filter_glob' 'do not extract files matching this glob pattern' 5)
 
   -c            $(desc "${mode}" 'context_label' 'prepend index and filename to each jobs output' 6)
-  -p            $(desc "${mode}" 'progress_bar' 'include a live progress bar with estimated time' 7)
-  -q            $(desc "${mode}" 'quiet_stdout' 'mute job output, redirect to temporary files' 8)
+  -l            $(desc "${mode}" 'log_files' 'list extracted files from archive in job output' 7)
+  -p            $(desc "${mode}" 'progress_bar' 'include a live progress bar with estimated time' 8)
+  -q            $(desc "${mode}" 'quiet_stdout' 'mute job output, redirect to temporary files' 9)
 
-  -t NUM        $(desc "${mode}" 'threads_count' "number of jobs to run in parallel (default: ${opt_threads_count})" 9)
-  -I            $(desc "${mode}" 'run_mode' 'interactive, ask each 7z job to execute or not' 10)
-  -X            $(desc "${mode}" 'run_mode' 'do not run 7z jobs, list the commands only' 10)
+  -t NUM        $(desc "${mode}" 'threads_count' "number of jobs to run in parallel (default: ${opt_threads_count})" 10)
+  -I            $(desc "${mode}" 'run_mode' 'interactive, ask each 7z job to execute or not' 11)
+  -X            $(desc "${mode}" 'run_mode' 'do not run 7z jobs, list the commands only' 11)
 $(help_notes "${mode}")
 $(show_copyright)
 EOF
@@ -192,7 +198,7 @@ if [ "${#}" -eq 0 ]; then
 fi
 
 OPTIND=1
-while getopts 'hHVaskbfro:i:x:t:cpqIX' OPTION; do
+while getopts 'hHVaskbfro:i:x:t:clpqIX' OPTION; do
 	case "${OPTION}" in
 	h)
 		show_help
@@ -229,6 +235,7 @@ while getopts 'hHVaskbfro:i:x:t:cpqIX' OPTION; do
 		;;
 	t) opt_threads_count="${OPTARG}" ;;
 	c) opt_context_label=true ;;
+	l) opt_log_files=true ;;
 	p) opt_progress_bar=true ;;
 	q) opt_quiet_stdout=true ;;
 	I) opt_run_mode='I' ;;
@@ -335,6 +342,10 @@ cmd_7z=(
 	-"${opt_update_mode}"
 	-o"${opt_output_dir}"
 )
+
+if [ "${opt_log_files}" == true ]; then
+	cmd_7z+=(-bb3)
+fi
 
 if [ "${#opt_filter_glob[@]}" -gt 0 ]; then
 	cmd_7z+=("${opt_filter_glob[@]}")
