@@ -74,11 +74,11 @@ alias or functions and use the program directly.
 I won't go too much into detail here, as the script has a descriptive help
 page: `unwrap -h` , or more explanation with `unwrap -H`
 
-In case of most basic usage without options, folders are created automatically
-for each input file in archives original location. The following command will
-create a folder named `my_1/` and unpack everything from the file `my_1.zip`
-into it. Existing files in that directory will not be overwritten by files with
-same name from archive content.
+Without options, dedicated sub folders for each archive file to unpack under
+are created automatically. Following command will take `my_1.zip` archive and
+unpack it's content under a dedicated folder `my_1/` in the same directory.
+Existing files in that folder will not be overwritten by files with same name
+from archive content.
 
 ```bash
 unwrap my_1.zip
