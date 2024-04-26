@@ -267,7 +267,7 @@ fi
 
 # subdir is part of opt_output_dir. Parallel interprets this special sequence
 # as follows, which is then used by 7z to determine where to save extracted
-# files:
+# files. These special sequences in form of "{}" contain quotes already:
 #   {//}=Dirname of input line.
 #   {/.}=Basename of input line without extension.
 if [ "${opt_root_dir}" == true ]; then
@@ -280,7 +280,10 @@ if [ -z "${opt_output_dir}" ] || [ "${opt_output_dir}" == '' ]; then
 	opt_output_dir="{//}${subdir}"
 else
 	opt_output_dir="${opt_output_dir/#\~/$HOME}"
-	opt_output_dir="$(readlink -n -f -- "${opt_output_dir}")${subdir}" || exit 1
+	# Added \" around user defined DIR in opt_output_dir, without quoting the
+	# subdir. That's because subdir is a parallel sequence that will be
+	# interpreted and includes quotes on its own.
+	opt_output_dir="\"$(readlink -n -f -- "${opt_output_dir}")\"${subdir}" || exit 1
 fi
 
 if [ "${opt_flat_mode}" == true ]; then
@@ -336,11 +339,13 @@ esac
 
 # NOTE: 7z requires arguments to parameters like in -o"dir" to not have a
 # splitting space character in between. They need to be specified together.
+# Also the opt_output_dir variable contains already quoted parts and should
+# not be quoted here again.
 cmd_7z=(
 	7z
 	"${opt_flat_mode}"
 	-"${opt_update_mode}"
-	-o"${opt_output_dir}"
+	-o${opt_output_dir}
 )
 
 if [ "${opt_log_files}" == true ]; then

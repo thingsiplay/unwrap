@@ -2,6 +2,11 @@
 
 Keep track of changes for [unwrap](https://github.com/thingsiplay/unwrap) .
 
+## [current]
+
+- bug: directory in -o DIR containing spaces was not working due to expansion
+  of special placeholders by parallel
+
 ## [0.4] - April 25, 2024
 
 - new: option -l to list all processed files that were extracted from the
