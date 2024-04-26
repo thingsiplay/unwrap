@@ -2,7 +2,7 @@
 
 Keep track of changes for [unwrap](https://github.com/thingsiplay/unwrap) .
 
-## [current]
+## [0.5] - April 26, 2024
 
 - bug: directory in -o DIR containing spaces was not working due to expansion
   of special placeholders by parallel
