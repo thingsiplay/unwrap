@@ -9,7 +9,7 @@ Wrapper to marry GNU Parallel and 7-Zip for archive extraction.
 ## What is this script for?
 
 It uses 7z to extract files from archives. By also utilizing GNU Parallel,
-multiple files can be processed at the same time.
+multiple archives can be processed at the same time.
 
 Purpose is to streamline option handling and usability of both programs into an
 unified interface. Sensible defaults and only functionality I care about are
