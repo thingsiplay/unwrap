@@ -2,7 +2,7 @@
 
 Keep track of changes for [unwrap](https://github.com/thingsiplay/unwrap) .
 
-## [current]
+## [0.6] - April 27, 2024
 
 - changed: a list of supported file extensions are added, and script will
   default to process only those files, list can be looked up in the -H long help
