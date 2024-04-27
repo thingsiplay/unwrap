@@ -164,7 +164,7 @@ time. Defaults to "${opt_threads_count}" threads at same time, up to "${max_thre
 Process all files, regardless of it's file extension. Without this option, only
 files with following extension are allowed:
 
-    -- $(echo ${allowed_ext[@]} | fold -sw 74) --
+    $(echo "${allowed_ext[@]}" | fold -sw 74)
 
 [12] -I -X
 Don't execute 7z job commands. -X will just output commandlines that would
@@ -291,7 +291,6 @@ in_allowed_ext() {
 	return 1
 }
 
-echo "all_ext=${opt_all_ext}"
 input_files=()
 for file in "${@}"; do
 	if [ "${opt_all_ext}" == false ]; then
