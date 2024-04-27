@@ -35,8 +35,7 @@ allowed_glob_chars='][0-9a-zA-Z.,?*/_+(){} -'
 # List of file extensions which 7z recognizes and supports. All other files are
 # excluded by the script. Can be looked up by command: 7z i
 allowed_ext=(
-	7z
-	tar ova zst tzstd gz gzip tgz tpz bz2 bzip2 tbz2 tbz
+	7z tar ova zst tzstd gz gzip tgz tpz bz2 bzip2 tbz2 tbz
 	lz tlz lz4 tlz4 lz5 tlz5 liz tliz
 	z taz xz txz xar pkg xip wim swm esd ppkg
 	zip z01 zipx jar xpi odt ods docx xlsx epub ipa apk appx
@@ -75,7 +74,7 @@ usage: ${pname} [-h | -H | -V]
        ${pspac} [-a | -s | -k | -b]
        ${pspac} [-f] [-r] [-o DIR] [-i GLOB]... [-x GLOB]...
        ${pspac} [-c] [-l] [-p] [-q]
-       ${pspac} [-t NUM] [-I | -X]
+       ${pspac} [-t NUM] [-A] [-I | -X]
        ${pspac} -- FILES...
 
 EOF
@@ -161,8 +160,8 @@ How many 7z jobs to run with parallel to process multiple files at the same
 time. Defaults to "${opt_threads_count}" threads at same time, up to "${max_threads}" max.
 
 [11] -A
-Process all files, regardless of it's file extension. Without this option, only
-files with following extension are allowed:
+Process all archive files for extraction, regardless of it's file extension.
+Without this option, only files with following extensions are unpacked by 7z:
 
   $(echo "${allowed_ext[@]}" | fold -sw 80)
 
