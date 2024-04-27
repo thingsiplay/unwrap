@@ -97,6 +97,29 @@ Use option `-a` to overwrite existing files:
 unwrap -a *.zip
 ```
 
+Only supported files are processed, such as .7z, .zip and more. This allows us
+to just give over any file. The script will workout what it can unpack and
+which to skip based on it's file extension:
+
+```bash
+unwrap -a *
+```
+
+Option `-A` will disable automatic extension check and instruct to process all
+files:
+
+```bash
+unwrap -a -A *
+```
+
+Some files can start with a dash `-` character in the name, which could
+potentially be interpreted as an option for the script. Use a double dash `--`
+to indicate that anything after that is a file and not an option:
+
+```bash
+unwrap -a -A -- -my_unusual_file.zip
+```
+
 With `-i GLOB` a file name or path with wildcards can be specified, to extract
 only files that match the GLOB pattern. Option `-f` will ignore archives
 internal sub directory structure and extract a flat structure only. `-o DIR`
