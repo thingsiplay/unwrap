@@ -2,6 +2,12 @@
 
 Keep track of changes for [unwrap](https://github.com/thingsiplay/unwrap) .
 
+## [current]
+
+- changed: a list of supported file extensions are added, and script will
+  default to process only those files, list can be looked up in the -H long help
+- new: option -A to process all files regardless of file extension
+
 ## [0.5] - April 26, 2024
 
 - bug: directory in -o DIR containing spaces was not working due to expansion

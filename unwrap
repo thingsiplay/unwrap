@@ -24,6 +24,7 @@ opt_context_label=false
 opt_log_files=false
 opt_progress_bar=false
 opt_quiet_stdout=false
+opt_all_ext=false
 opt_run_mode=''
 
 # The following settings define limits to various options. They are not meant to
@@ -31,6 +32,23 @@ opt_run_mode=''
 max_threads=8
 # The list is for regex comparison, so be careful on editing.
 allowed_glob_chars='][0-9a-zA-Z.,?*/_+(){} -'
+# List of file extensions which 7z recognizes and supports. All other files are
+# excluded by the script. Can be looked up by command: 7z i
+allowed_ext=(
+	7z
+	tar ova zst tzstd gz gzip tgz tpz bz2 bzip2 tbz2 tbz
+	lz tlz lz4 tlz4 lz5 tlz5 liz tliz
+	z taz xz txz xar pkg xip wim swm esd ppkg
+	zip z01 zipx jar xpi odt ods docx xlsx epub ipa apk appx
+	vmdk vhd vdi scap uefif qcow qcow2 qcow2c
+	udf iso img dmg cramfs cpio
+	ntfs fat ext ext2 ext3 ext4 elf gpt mbr
+	flv swf squashfs 001 rpm rar r00
+	pmd te exe dll sys nsi msi msp
+	doc xls ppt chm chi chq chw hxs hxi hxr hxw lit
+	mub mslz macho cab arj ar a deb lib apm
+	lzma lzma86 lzh lha ihex hfs hfsx
+)
 
 # Script name without extension, for help message.
 pname="${0##*/}"
@@ -142,7 +160,13 @@ and print path of these files instead, in example "/tmp/parXXXXX.par".
 How many 7z jobs to run with parallel to process multiple files at the same
 time. Defaults to "${opt_threads_count}" threads at same time, up to "${max_threads}" max.
 
-[11] -I -X
+[11] -A
+Process all files, regardless of it's file extension. Without this option, only
+files with following extension are allowed:
+
+    -- $(echo ${allowed_ext[@]} | fold -sw 74) --
+
+[12] -I -X
 Don't execute 7z job commands. -X will just output commandlines that would
 have been run. -I on the other hand asks every command if it should run or
 not. Answer with "y" or "Y" to start or any other key or Enter to skip it.
@@ -183,9 +207,11 @@ options:
   -p            $(desc "${mode}" 'progress_bar' 'include a live progress bar with estimated time' 8)
   -q            $(desc "${mode}" 'quiet_stdout' 'mute job output and redirect to temporary files' 9)
 
+
   -t NUM        $(desc "${mode}" 'threads_count' "number of jobs to run in parallel (default: ${opt_threads_count})" 10)
-  -I            $(desc "${mode}" 'run_mode' 'interactive, ask each 7z job to execute or not' 11)
-  -X            $(desc "${mode}" 'run_mode' 'do not run 7z jobs, list the commands only' 11)
+  -A            $(desc "${mode}" 'all_ext' 'process all files, do not limit to known extensions' 11)
+  -I            $(desc "${mode}" 'run_mode' 'interactive, ask each 7z job to execute or not' 12)
+  -X            $(desc "${mode}" 'run_mode' 'do not run 7z jobs, list the commands only' 12)
 $(help_notes "${mode}")
 $(show_copyright)
 EOF
@@ -198,7 +224,7 @@ if [ "${#}" -eq 0 ]; then
 fi
 
 OPTIND=1
-while getopts 'hHVaskbfro:i:x:t:clpqIX' OPTION; do
+while getopts 'hHVaskbfro:i:x:t:clpqAIX' OPTION; do
 	case "${OPTION}" in
 	h)
 		show_help
@@ -238,6 +264,7 @@ while getopts 'hHVaskbfro:i:x:t:clpqIX' OPTION; do
 	l) opt_log_files=true ;;
 	p) opt_progress_bar=true ;;
 	q) opt_quiet_stdout=true ;;
+	A) opt_all_ext=true ;;
 	I) opt_run_mode='I' ;;
 	X) opt_run_mode='X' ;;
 	*)
@@ -249,7 +276,27 @@ done
 # Discard the options and sentinel --
 shift "$((OPTIND - 1))"
 
+in_allowed_ext() {
+	local ext
+	ext="${1}"
+
+	if [ "${ext}" == '' ]; then
+		return 1
+	fi
+	for entry in "${allowed_ext[@]}"; do
+		if [[ ${ext} == "${entry}" ]]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+echo "all_ext=${opt_all_ext}"
+input_files=()
 for file in "${@}"; do
+	if [ "${opt_all_ext}" == false ]; then
+		in_allowed_ext "${file##*.}" || continue
+	fi
 	if [ -f "${file}" ]; then
 		input_files+=("${file}")
 	fi
