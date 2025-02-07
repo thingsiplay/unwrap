@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 show_version() {
-	cat <<EOF
+    cat <<EOF
 unwrap v0.6
 EOF
 }
 
 show_copyright() {
-	cat <<EOF
+    cat <<EOF
 Copyright © 2024 Tuncay D. <https://github.com/thingsiplay/unwrap>
 EOF
 }
@@ -35,25 +35,25 @@ allowed_glob_chars='][0-9a-zA-Z.,?*/_+(){} -'
 # List of file extensions which 7z recognizes and supports. All other files are
 # excluded by the script. Can be looked up by command: 7z i
 allowed_ext=(
-	7z tar ova zst tzstd gz gzip tgz tpz bz2 bzip2 tbz2 tbz
-	lz tlz lz4 tlz4 lz5 tlz5 liz tliz
-	z taz xz txz xar pkg xip wim swm esd ppkg
-	zip z01 zipx jar xpi odt ods docx xlsx epub ipa apk appx
-	vmdk vhd vdi scap uefif qcow qcow2 qcow2c
-	udf iso img dmg cramfs cpio
-	ntfs fat ext ext2 ext3 ext4 elf gpt mbr
-	flv swf squashfs 001 rpm rar r00
-	pmd te exe dll sys nsi msi msp
-	doc xls ppt chm chi chq chw hxs hxi hxr hxw lit
-	mub mslz macho cab arj ar a deb lib apm
-	lzma lzma86 lzh lha ihex hfs hfsx
+    7z tar ova zst tzstd gz gzip tgz tpz bz2 bzip2 tbz2 tbz
+    lz tlz lz4 tlz4 lz5 tlz5 liz tliz
+    z taz xz txz xar pkg xip wim swm esd ppkg
+    zip z01 zipx jar xpi odt ods docx xlsx epub ipa apk appx
+    vmdk vhd vdi scap uefif qcow qcow2 qcow2c
+    udf iso img dmg cramfs cpio
+    ntfs fat ext ext2 ext3 ext4 elf gpt mbr
+    flv swf squashfs 001 rpm rar r00
+    pmd te exe dll sys nsi msi msp
+    doc xls ppt chm chi chq chw hxs hxi hxr hxw lit
+    mub mslz macho cab arj ar a deb lib apm
+    lzma lzma86 lzh lha ihex hfs hfsx
 )
 
 # Script name without extension, for help message.
 pname="${0##*/}"
 
 show_examples() {
-	cat <<EOF
+    cat <<EOF
 examples:
   ${pname} *.zip
 
@@ -66,10 +66,10 @@ EOF
 }
 
 show_usage() {
-	local pspac
-	pspac="$(printf '%s' "${pname}" | sed 's/./ /g')"
+    local pspac
+    pspac="$(printf '%s' "${pname}" | sed 's/./ /g')"
 
-	cat <<EOF
+    cat <<EOF
 usage: ${pname} [-h | -H | -V]
        ${pspac} [-a | -s | -k | -b]
        ${pspac} [-f] [-r] [-o DIR] [-i GLOB]... [-x GLOB]...
@@ -81,33 +81,33 @@ EOF
 }
 
 show_help() {
-	local mode
-	mode="${1}"
+    local mode
+    mode="${1}"
 
-	desc() {
-		local mode
-		local var
-		local text
-		local ref
-		mode="${1}"
-		var="${2}"
-		text="${3}"
-		ref="${4}"
+    desc() {
+        local mode
+        local var
+        local text
+        local ref
+        mode="${1}"
+        var="${2}"
+        text="${3}"
+        ref="${4}"
 
-		if [ "${mode}" == '-H' ]; then
-			printf '%s' "${var}: ${text} [${ref}]"
-		else
-			printf '%s' "${text}"
-		fi
-	}
+        if [ "${mode}" == '-H' ]; then
+            printf '%s' "${var}: ${text} [${ref}]"
+        else
+            printf '%s' "${text}"
+        fi
+    }
 
-	help_notes() {
-		local space
-		# Empty space as workaround to preserve last new line before EOF.
-		space=" "
+    help_notes() {
+        local space
+        # Empty space as workaround to preserve last new line before EOF.
+        space=" "
 
-		if [ "${mode}" == '-H' ]; then
-			cat <<EOF
+        if [ "${mode}" == '-H' ]; then
+            cat <<EOF
 
 [1] -a -s -k -b
 What to do when extracting a file that has same name and exists already.
@@ -173,10 +173,10 @@ not. Answer with "y" or "Y" to start or any other key or Enter to skip it.
 $(show_examples)
 ${space}
 EOF
-		fi
-	}
+        fi
+    }
 
-	cat <<EOF
+    cat <<EOF
 Unwrap - wrapper to marry GNU Parallel and 7-Zip for archive extraction
 
 $(show_usage)
@@ -217,97 +217,97 @@ EOF
 }
 
 if [ "${#}" -eq 0 ]; then
-	show_usage >&2
-	show_copyright >&2
-	exit 1
+    show_usage >&2
+    show_copyright >&2
+    exit 1
 fi
 
 OPTIND=1
 while getopts 'hHVaskbfro:i:x:t:clpqAIX' OPTION; do
-	case "${OPTION}" in
-	h)
-		show_help
-		exit 0
-		;;
-	H)
-		show_help -H
-		exit 0
-		;;
-	V)
-		show_version
-		exit 0
-		;;
-	a) opt_update_mode="a" ;;
-	s) opt_update_mode="s" ;;
-	k) opt_update_mode="k" ;;
-	b) opt_update_mode="b" ;;
-	f) opt_flat_mode=true ;;
-	r) opt_root_dir=true ;;
-	o) opt_output_dir="${OPTARG}" ;;
-	i)
-		if ! [[ "${OPTARG}" =~ ^[${allowed_glob_chars}]+$ ]]; then
-			echo "Invalid character for -i. Only \"${allowed_glob_chars}\" allowed." >&2
-			exit 1
-		fi
-		opt_filter_glob+=("-i!'${OPTARG}'")
-		;;
-	x)
-		if ! [[ "${OPTARG}" =~ ^[${allowed_glob_chars}]+$ ]]; then
-			echo "Invalid character for -x. Only \"${allowed_glob_chars}\" allowed." >&2
-			exit 1
-		fi
-		opt_filter_glob+=("-x!'${OPTARG}'")
-		;;
-	t) opt_threads_count="${OPTARG}" ;;
-	c) opt_context_label=true ;;
-	l) opt_log_files=true ;;
-	p) opt_progress_bar=true ;;
-	q) opt_quiet_stdout=true ;;
-	A) opt_all_ext=true ;;
-	I) opt_run_mode='I' ;;
-	X) opt_run_mode='X' ;;
-	*)
-		show_help -H >&2
-		exit 1
-		;;
-	esac
+    case "${OPTION}" in
+    h)
+        show_help
+        exit 0
+        ;;
+    H)
+        show_help -H
+        exit 0
+        ;;
+    V)
+        show_version
+        exit 0
+        ;;
+    a) opt_update_mode="a" ;;
+    s) opt_update_mode="s" ;;
+    k) opt_update_mode="k" ;;
+    b) opt_update_mode="b" ;;
+    f) opt_flat_mode=true ;;
+    r) opt_root_dir=true ;;
+    o) opt_output_dir="${OPTARG}" ;;
+    i)
+        if ! [[ "${OPTARG}" =~ ^[${allowed_glob_chars}]+$ ]]; then
+            echo "Invalid character for -i. Only \"${allowed_glob_chars}\" allowed." >&2
+            exit 1
+        fi
+        opt_filter_glob+=("-i!'${OPTARG}'")
+        ;;
+    x)
+        if ! [[ "${OPTARG}" =~ ^[${allowed_glob_chars}]+$ ]]; then
+            echo "Invalid character for -x. Only \"${allowed_glob_chars}\" allowed." >&2
+            exit 1
+        fi
+        opt_filter_glob+=("-x!'${OPTARG}'")
+        ;;
+    t) opt_threads_count="${OPTARG}" ;;
+    c) opt_context_label=true ;;
+    l) opt_log_files=true ;;
+    p) opt_progress_bar=true ;;
+    q) opt_quiet_stdout=true ;;
+    A) opt_all_ext=true ;;
+    I) opt_run_mode='I' ;;
+    X) opt_run_mode='X' ;;
+    *)
+        show_help -H >&2
+        exit 1
+        ;;
+    esac
 done
 # Discard the options and sentinel --
 shift "$((OPTIND - 1))"
 
 in_allowed_ext() {
-	local ext
-	ext="${1}"
+    local ext
+    ext="${1}"
 
-	if [ "${ext}" == '' ]; then
-		return 1
-	fi
-	for entry in "${allowed_ext[@]}"; do
-		if [[ ${ext} == "${entry}" ]]; then
-			return 0
-		fi
-	done
-	return 1
+    if [ "${ext}" == '' ]; then
+        return 1
+    fi
+    for entry in "${allowed_ext[@]}"; do
+        if [[ ${ext} == "${entry}" ]]; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 input_files=()
 for file in "${@}"; do
-	if [ "${opt_all_ext}" == false ]; then
-		in_allowed_ext "${file##*.}" || continue
-	fi
-	if [ -f "${file}" ]; then
-		input_files+=("${file}")
-	fi
+    if [ "${opt_all_ext}" == false ]; then
+        in_allowed_ext "${file##*.}" || continue
+    fi
+    if [ -f "${file}" ]; then
+        input_files+=("${file}")
+    fi
 done
 
 if [ -z "${opt_threads_count}" ] || [ "${opt_threads_count}" == '' ]; then
-	opt_threads_count=1
+    opt_threads_count=1
 elif ! [[ "${opt_threads_count}" =~ ^[0-9]+$ ]]; then
-	echo 'Invalid character for -t. Only digits allowed.' >&2
-	exit 1
+    echo 'Invalid character for -t. Only digits allowed.' >&2
+    exit 1
 elif [ "${opt_threads_count}" -lt 1 ] || [ "${opt_threads_count}" -gt "${max_threads}" ]; then
-	echo "Invalid count for -t. Only 1 to ${max_threads} allowed." >&2
-	exit 1
+    echo "Invalid count for -t. Only 1 to ${max_threads} allowed." >&2
+    exit 1
 fi
 
 # subdir is part of opt_output_dir. Parallel interprets this special sequence
@@ -316,25 +316,25 @@ fi
 #   {//}=Dirname of input line.
 #   {/.}=Basename of input line without extension.
 if [ "${opt_root_dir}" == true ]; then
-	subdir=''
+    subdir=''
 else
-	subdir="/{/.}"
+    subdir="/{/.}"
 fi
 
 if [ -z "${opt_output_dir}" ] || [ "${opt_output_dir}" == '' ]; then
-	opt_output_dir="{//}${subdir}"
+    opt_output_dir="{//}${subdir}"
 else
-	opt_output_dir="${opt_output_dir/#\~/$HOME}"
-	# Added \" around user defined DIR in opt_output_dir, without quoting the
-	# subdir. That's because subdir is a parallel sequence that will be
-	# interpreted and includes quotes on its own.
-	opt_output_dir="\"$(readlink -n -f -- "${opt_output_dir}")\"${subdir}" || exit 1
+    opt_output_dir="${opt_output_dir/#\~/$HOME}"
+    # Added \" around user defined DIR in opt_output_dir, without quoting the
+    # subdir. That's because subdir is a parallel sequence that will be
+    # interpreted and includes quotes on its own.
+    opt_output_dir="\"$(readlink -n -f -- "${opt_output_dir}")\"${subdir}" || exit 1
 fi
 
 if [ "${opt_flat_mode}" == true ]; then
-	opt_flat_mode='e'
+    opt_flat_mode='e'
 else
-	opt_flat_mode='x'
+    opt_flat_mode='x'
 fi
 
 case "${opt_update_mode}" in
@@ -343,33 +343,33 @@ s) opt_update_mode='aos' ;;
 k) opt_update_mode='aou' ;;
 b) opt_update_mode='aot' ;;
 *)
-	echo 'Invalid mode for opt_update_mode. Only "a", "s", "k" or "b" allowed.' >&2
-	exit 1
-	;;
+    echo 'Invalid mode for opt_update_mode. Only "a", "s", "k" or "b" allowed.' >&2
+    exit 1
+    ;;
 esac
 
 cmd_parallel=(
-	parallel
-	-j
-	"${opt_threads_count}"
-	--keep-order
-	--line-buffer
+    parallel
+    -j
+    "${opt_threads_count}"
+    --keep-order
+    --line-buffer
 )
 
 if [ "${opt_context_label}" == true ]; then
-	# The following expression in the string will be interpreted by parallel
-	# to something like: "1/3 filename.zip:"
-	cmd_parallel+=(--tagstring '{#}/{= $_=total_jobs()=} {/}:')
+    # The following expression in the string will be interpreted by parallel
+    # to something like: "1/3 filename.zip:"
+    cmd_parallel+=(--tagstring '{#}/{= $_=total_jobs()=} {/}:')
 fi
 
 if [ "${opt_quiet_stdout}" == true ]; then
-	cmd_parallel+=(--output-as-files)
+    cmd_parallel+=(--output-as-files)
 fi
 
 if [ "${opt_progress_bar}" == true ]; then
-	cmd_parallel+=(--progress)
-	cmd_parallel+=(--bar)
-	cmd_parallel+=(--eta)
+    cmd_parallel+=(--progress)
+    cmd_parallel+=(--bar)
+    cmd_parallel+=(--eta)
 fi
 
 case "${opt_run_mode}" in
@@ -377,9 +377,9 @@ I) cmd_parallel+=(--interactive) ;;
 X) cmd_parallel+=(--dry-run) ;;
 "") ;;
 *)
-	echo 'Invalid mode for opt_run_mode. Only "I" or "X" allowed.' >&2
-	exit 1
-	;;
+    echo 'Invalid mode for opt_run_mode. Only "I" or "X" allowed.' >&2
+    exit 1
+    ;;
 esac
 
 # NOTE: 7z requires arguments to parameters like in -o"dir" to not have a
@@ -387,19 +387,19 @@ esac
 # Also the opt_output_dir variable contains already quoted parts and should
 # not be quoted here again.
 cmd_7z=(
-	7z
-	"${opt_flat_mode}"
-	-"${opt_update_mode}"
-	-o${opt_output_dir}
+    7z
+    "${opt_flat_mode}"
+    -"${opt_update_mode}"
+    -o${opt_output_dir}
 )
 
 if [ "${opt_log_files}" == true ]; then
-	cmd_7z+=(-bb3)
+    cmd_7z+=(-bb3)
 fi
 
 if [ "${#opt_filter_glob[@]}" -gt 0 ]; then
-	cmd_7z+=("${opt_filter_glob[@]}")
-	cmd_7z+=(-r)
+    cmd_7z+=("${opt_filter_glob[@]}")
+    cmd_7z+=(-r)
 fi
 
 "${cmd_parallel[@]}" "${cmd_7z[@]}" -- {} ::: "${input_files[@]}"
