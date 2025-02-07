@@ -348,12 +348,14 @@ b) opt_update_mode='aot' ;;
     ;;
 esac
 
+# --unsafe required to allow certain characters in filenams or directories.
 cmd_parallel=(
     parallel
     -j
     "${opt_threads_count}"
     --keep-order
     --line-buffer
+    --unsafe
 )
 
 if [ "${opt_context_label}" == true ]; then
